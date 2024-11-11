@@ -146,12 +146,4 @@ else
             await JSRuntime.InvokeVoidAsync("alert", $"Virhe tilauksen luomisessa: {ex.Message}");
         }
     }
-
-    private class CartItemWithPhone
-    {
-        public int CartItemID { get; set; }
-        public int CartID { get; set; }
-        public int Quantity { get; set; }
-        public PhoneModel Phone { get; set; }
-    }
 }

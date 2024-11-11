@@ -9,19 +9,10 @@ namespace Backend.Api
     {
         public static void MapCartApi(this WebApplication app)
         {
-            app.MapGet("/api/cart", GetCart);
-            app.MapPost("/api/cart/items", AddToCart);
-            app.MapPut("/api/cart/items/{id}", UpdateCartItem);
+            app.MapGet("/api/cart", (Func<HttpContext, Task<IResult>>)GetCart);
+            app.MapPost("/api/cart/items", (Func<CartItemModel, HttpContext, Task<IResult>>)AddToCart);
+            app.MapPut("/api/cart/items/{id}", (Func<int, JsonElement, Task<IResult>>)UpdateCartItem);
             app.MapDelete("/api/cart/items/{id}", RemoveFromCart);
-        }
-
-        // Define the model to match frontend
-        private class CartItemWithPhone
-        {
-            public int CartItemID { get; set; }
-            public int CartID { get; set; }
-            public int Quantity { get; set; }
-            public PhoneModel Phone { get; set; }
         }
 
         private static async Task<IResult> GetCart(HttpContext context)
