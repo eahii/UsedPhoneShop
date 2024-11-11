@@ -1,6 +1,7 @@
 @page "/cart"
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
 @using Shared.Models
 
 <h3>Ostoskori</h3>
@@ -60,7 +61,7 @@ else
     </div>
 
     <div class="d-flex justify-content-end mt-3">
-        <button class="btn btn-primary" @onclick="Checkout">
+        <button class="btn btn-primary" @onclick="NavigateToCheckout">
             Siirry kassalle
         </button>
     </div>
@@ -130,20 +131,13 @@ else
         }
     }
 
+    private void NavigateToCheckout()
+    {
+        NavigationManager.NavigateTo("/checkout");
+    }
+
     private async Task Checkout()
     {
-        try
-        {
-            var response = await Http.PostAsync("/api/orders/create", null);
-            if (response.IsSuccessStatusCode)
-            {
-                await JSRuntime.InvokeVoidAsync("alert", "Tilaus luotu onnistuneesti!");
-                await LoadCart();
-            }
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Virhe tilauksen luomisessa: {ex.Message}");
-        }
+        // Tämä metodi voidaan poistaa, jos siirrytään käyttämään navigointia
     }
 }

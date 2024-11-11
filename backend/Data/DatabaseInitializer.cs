@@ -1,4 +1,6 @@
 using Microsoft.Data.Sqlite;
+using Shared.Models;
+using System.Threading.Tasks;
 
 namespace Backend.Data
 {
@@ -92,6 +94,26 @@ namespace Backend.Data
                         FOREIGN KEY (PhoneID) REFERENCES Phones(PhoneID)      -- Määrittää, että PhoneID viittaa Phones-tauluun
                     )";
                 await createCartItemsTable.ExecuteNonQueryAsync(); // Taulun luonti asynkronisesti
+
+                // Offers-taulu (tallentaa käyttäjien lähettämät arviot)
+                var createOffersTable = connection.CreateCommand();
+                createOffersTable.CommandText = @"
+                    CREATE TABLE IF NOT EXISTS Offers (
+                        OfferID INTEGER PRIMARY KEY AUTOINCREMENT,
+                        UserID INTEGER NOT NULL,
+                        PhoneBrand TEXT NOT NULL,
+                        PhoneModel TEXT NOT NULL,
+                        OriginalPrice REAL NOT NULL,
+                        PhoneAge INTEGER NOT NULL,
+                        OverallCondition INTEGER NOT NULL,
+                        BatteryLife INTEGER NOT NULL,
+                        ScreenCondition INTEGER NOT NULL,
+                        CameraCondition INTEGER NOT NULL,
+                        Status TEXT NOT NULL,
+                        SubmissionDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (UserID) REFERENCES Users(UserID)
+                    )";
+                await createOffersTable.ExecuteNonQueryAsync();
             }
             // Tähän päättyessä using-lohko sulkee automaattisesti tietokantayhteyden
             // Tämä tapahtuu kutsumalla SqliteConnection-olion Dispose-metodia

@@ -1,5 +1,7 @@
 @page "/offer"
+@inject HttpClient Http
 @inject IJSRuntime JSRuntime
+@using Shared.Models
 
 <h3>Myy puhelimesi!</h3>
 
@@ -54,6 +56,10 @@
             <strong>Arvioitu myynti hinta:</strong> @resellValue.Value.ToString("C2")
         </div>
     }
+
+    <div class="mb-3">
+        <button class="btn btn-success" @onclick="SubmitOffer">Lähetä arvio vahvistettavaksi</button>
+    </div>
 </div>
 
 @code {
@@ -69,23 +75,63 @@
 
     private void CalculateResellValue()
     {
-        if (string.IsNullOrWhiteSpace(phoneBrand) || string.IsNullOrWhiteSpace(phoneModel) || originalPrice <= 0)
+        // Esimerkkiarvioitus logiikka
+        resellValue = originalPrice * 0.7m
+        - (phoneAge * 20)
+        - (100 - overallCondition)
+        - (100 - batteryLife)
+        - (100 - screenCondition)
+        - (100 - cameraCondition);
+        if (resellValue < 0) resellValue = 0;
+    }
+
+    private async Task SubmitOffer()
+    {
+        var offer = new OfferModel
+            {
+                PhoneBrand = phoneBrand,
+                PhoneModel = phoneModel,
+                OriginalPrice = originalPrice,
+                PhoneAge = phoneAge,
+                OverallCondition = overallCondition,
+                BatteryLife = batteryLife,
+                ScreenCondition = screenCondition,
+                CameraCondition = cameraCondition,
+                Status = "Pending",
+                SubmissionDate = DateTime.UtcNow
+            };
+
+        try
         {
-            JSRuntime.InvokeVoidAsync("alert", "Täytä kaikki kentät ennen laskemista.");
-            return;
+            var response = await Http.PostAsJsonAsync("/api/offers", offer);
+            if (response.IsSuccessStatusCode)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Arviosi lähetettiin vahvistettavaksi!");
+                // Tyhjennä lomake tarvittaessa
+                ClearForm();
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                await JSRuntime.InvokeVoidAsync("alert", $"Virhe arvioita lähetettäessä: {error}");
+            }
         }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Virhe arvioita lähetettäessä: {ex.Message}");
+        }
+    }
 
-        // Base formula components
-        decimal basePrice = originalPrice;
-        decimal conditionFactor = (overallCondition * 0.4m + batteryLife * 0.3m + screenCondition * 0.2m + cameraCondition *
-        0.1m) / 100m;
-        decimal ageDepreciation = 1 - (phoneAge * 0.15m); // 15% depreciation per year
-
-        // Ensure depreciation does not reduce value below 10%
-        if (ageDepreciation < 0.1m)
-            ageDepreciation = 0.1m;
-
-        // Final resell value
-        resellValue = basePrice * conditionFactor * ageDepreciation;
+    private void ClearForm()
+    {
+        phoneBrand = "";
+        phoneModel = "";
+        originalPrice = 0;
+        phoneAge = 0;
+        overallCondition = 100;
+        batteryLife = 100;
+        screenCondition = 100;
+        cameraCondition = 100;
+        resellValue = null;
     }
 }

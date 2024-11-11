@@ -8,15 +8,13 @@ using Shared.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // Swagger-dokumentaatio
-// Lisätään Swagger-tuki, joka mahdollistaa API-dokumentaation luomisen
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Used Phones API", Version = "v1" });
 });
 
-// Lisää CORS-käytäntö, joka sallii kaikki originit, metodit ja otsikot
-// (Voit myöhemmin rajoittaa tämän tiettyihin arvoihin tietoturvan parantamiseksi.)
+// CORS-käytäntö
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorClient", policy =>
@@ -40,26 +38,21 @@ var app = builder.Build();
 app.UseCors("AllowBlazorClient");
 
 // Swagger-käyttöliittymä
-// Käytetään Swaggerin käyttöliittymää, jotta API-päätepisteet ovat helppokäyttöisiä ja testattavissa selaimessa
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-    // Määritellään Swagger-dokumentaation sijainti ja URL-reitti
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Used Phones API V1");
-    c.RoutePrefix = string.Empty; // Määrittää, että Swagger UI avautuu suoraan root-URL:ssa
+    c.RoutePrefix = string.Empty; // Swagger UI avautuu suoraan root-URL:ssa
 });
 
 // Tietokannan alustaminen asynkronisesti
 await DatabaseInitializer.Initialize();
 
-// Rekisteröi Phones API -päätepisteet
+// Rekisteröi API-päätepisteet
 app.MapPhonesApi();
-
-// Rekisteröidään AuthApi-päätepisteet
-app.MapAuthApi(); // Rekisteröidään rekisteröinti- ja kirjautumispäätepisteet sovellukseen
-
-// Rekisteröi Cart API -päätepisteet
+app.MapAuthApi();
 app.MapCartApi();
+app.MapOfferApi(); // Lisää tämä rivi
 
 // Käynnistetään sovellus
 app.Run();

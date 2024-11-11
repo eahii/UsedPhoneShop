@@ -1,0 +1,133 @@
+@page "/pending-offers"
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using Shared.Models
+
+<h3>Vahvistettavat Arviot</h3>
+
+@if (isLoading)
+{
+    <p>Ladataan vahvistettavia arvioita...</p>
+}
+else if (offers == null || !offers.Any())
+{
+    <p>Ei vahvistettavia arvioita.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Merkki</th>
+                    <th>Malli</th>
+                    <th>Alkuperäinen Hinta (€)</th>
+                    <th>Ikä (vuosina)</th>
+                    <th>Yleinen Kunto (%)</th>
+                    <th>Akunkesto (%)</th>
+                    <th>Näytön Kunto (%)</th>
+                    <th>Kameran Kunto (%)</th>
+                    <th>Toimenpiteet</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var offer in offers)
+                {
+                    <tr>
+                        <td>@offer.PhoneBrand</td>
+                        <td>@offer.PhoneModel</td>
+                        <td>@offer.OriginalPrice</td>
+                        <td>@offer.PhoneAge</td>
+                        <td>@offer.OverallCondition%</td>
+                        <td>@offer.BatteryLife%</td>
+                        <td>@offer.ScreenCondition%</td>
+                        <td>@offer.CameraCondition%</td>
+                        <td>
+                            <button class="btn btn-success" @onclick="() => AcceptOffer(offer.OfferID)">Hyväksy</button>
+                            <button class="btn btn-danger" @onclick="() => DeclineOffer(offer.OfferID)">Hylkää</button>
+                            <button class="btn btn-warning" @onclick="() => ModifyOffer(offer)">Muokkaa</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private List<OfferModel> offers;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPendingOffers();
+    }
+
+    private async Task LoadPendingOffers()
+    {
+        try
+        {
+            isLoading = true;
+            offers = await Http.GetFromJsonAsync<List<OfferModel>>("/api/offers/pending");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Virhe arvioiden lataamisessa: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task AcceptOffer(int offerId)
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync($"/api/offers/accept/{offerId}", new { });
+            if (response.IsSuccessStatusCode)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", $"Hyväksytty tarjous ID: {offerId}");
+                await LoadPendingOffers(); // Refresh the list
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                await JSRuntime.InvokeVoidAsync("alert", $"Virhe tarjouksen hyväksymisessä: {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Virhe tarjouksen hyväksymisessä: {ex.Message}");
+        }
+    }
+
+    private async Task DeclineOffer(int offerId)
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync($"/api/offers/decline/{offerId}", new { });
+            if (response.IsSuccessStatusCode)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", $"Hylätty tarjous ID: {offerId}");
+                await LoadPendingOffers(); // Refresh the list
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                await JSRuntime.InvokeVoidAsync("alert", $"Virhe tarjouksen hylkäämisessä: {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Virhe tarjouksen hylkäämisessä: {ex.Message}");
+        }
+    }
+
+    private async Task ModifyOffer(OfferModel offer)
+    {
+        // Navigate to the modify offer page
+        NavigationManager.NavigateTo($"/modify-offer/{offer.OfferID}");
+    }
+}
