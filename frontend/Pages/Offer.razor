@@ -1,0 +1,91 @@
+@page "/offer"
+@inject IJSRuntime JSRuntime
+
+<h3>Myy puhelimesi!</h3>
+
+<div class="offer-container">
+    <div class="mb-3">
+        <label class="form-label">Puhelimen merkki:</label>
+        <input type="text" class="form-control" @bind="phoneBrand" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Puhelimen malli:</label>
+        <input type="text" class="form-control" @bind="phoneModel" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Alkuperäinen hinta (€):</label>
+        <input type="number" class="form-control" min="0" @bind="originalPrice" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Puhelimen Ikä (vuosina):</label>
+        <input type="number" class="form-control" min="0" @bind="phoneAge" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Yleinen Kunto: @overallCondition% </label>
+        <input type="range" class="form-range" min="1" max="100" @bind="overallCondition" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Akunkesto: @batteryLife% </label>
+        <input type="range" class="form-range" min="1" max="100" @bind="batteryLife" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Näytön Kunto: @screenCondition% </label>
+        <input type="range" class="form-range" min="1" max="100" @bind="screenCondition" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Kameran Kunto: @cameraCondition% </label>
+        <input type="range" class="form-range" min="1" max="100" @bind="cameraCondition" />
+    </div>
+
+    <div class="mb-3">
+        <button class="btn btn-primary" @onclick="CalculateResellValue">Laske Arvio</button>
+    </div>
+
+    @if (resellValue.HasValue)
+    {
+        <div class="alert alert-info">
+            <strong>Arvioitu myynti hinta:</strong> @resellValue.Value.ToString("C2")
+        </div>
+    }
+</div>
+
+@code {
+    private string phoneBrand = "";
+    private string phoneModel = "";
+    private decimal originalPrice = 0;
+    private int phoneAge = 0;
+    private int overallCondition = 100;
+    private int batteryLife = 100;
+    private int screenCondition = 100;
+    private int cameraCondition = 100;
+    private decimal? resellValue;
+
+    private void CalculateResellValue()
+    {
+        if (string.IsNullOrWhiteSpace(phoneBrand) || string.IsNullOrWhiteSpace(phoneModel) || originalPrice <= 0)
+        {
+            JSRuntime.InvokeVoidAsync("alert", "Täytä kaikki kentät ennen laskemista.");
+            return;
+        }
+
+        // Base formula components
+        decimal basePrice = originalPrice;
+        decimal conditionFactor = (overallCondition * 0.4m + batteryLife * 0.3m + screenCondition * 0.2m + cameraCondition *
+        0.1m) / 100m;
+        decimal ageDepreciation = 1 - (phoneAge * 0.15m); // 15% depreciation per year
+
+        // Ensure depreciation does not reduce value below 10%
+        if (ageDepreciation < 0.1m)
+            ageDepreciation = 0.1m;
+
+        // Final resell value
+        resellValue = basePrice * conditionFactor * ageDepreciation;
+    }
+}
